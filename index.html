@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Work time calculator</title>
+    <style>
+        :root {
+            --bg1: #0b1220;
+            --bg2: #0a1a2b;
+            --card: rgba(255, 255, 255, 0.08);
+            --card2: rgba(255, 255, 255, 0.06);
+            --stroke: rgba(255, 255, 255, 0.14);
+            --text: rgba(255, 255, 255, 0.92);
+            --muted: rgba(255, 255, 255, 0.65);
+
+            --good: #43f08a;
+            --bad: #ff5b5b;
+            --ok: rgba(255, 255, 255, 0.92);
+
+            --shadow: 0 14px 60px rgba(0, 0, 0, 0.45);
+            --radius: 22px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            color: var(--text);
+            background:
+                radial-gradient(900px 600px at 20% 15%, rgba(80, 140, 255, 0.22), transparent 60%),
+                radial-gradient(900px 600px at 80% 20%, rgba(70, 255, 180, 0.14), transparent 55%),
+                linear-gradient(160deg, var(--bg1), var(--bg2));
+        }
+
+        /* Centers the whole app while allowing a page title above the cards */
+        .page {
+            width: min(920px, 100%);
+            margin: 0 auto;
+            padding-top: 24px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 0 0 24px 0;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .wrap {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, var(--card), var(--card2));
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            overflow: hidden;
+        }
+
+        .card .head {
+            padding: 18px 18px 12px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 650;
+            letter-spacing: 0.2px;
+            margin: 0;
+        }
+
+        .content {
+            padding: 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 560px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 6px 2px;
+        }
+
+        input[type="time"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text);
+            outline: none;
+            font-size: 14px;
+        }
+
+        /* Hide number steppers (spinners) */
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input:focus {
+            border-color: rgba(120, 180, 255, 0.55);
+            box-shadow: 0 0 0 4px rgba(120, 180, 255, 0.16);
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(0, 0, 0, 0.18);
+            border-radius: 16px;
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .switch {
+            width: 46px;
+            height: 28px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.10);
+            position: relative;
+            flex: 0 0 auto;
+            cursor: pointer;
+        }
+
+        .knob {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 3px;
+            background: rgba(255, 255, 255, 0.90);
+            transition: left 160ms ease, background 160ms ease;
+        }
+
+        .switch.on {
+            background: rgba(67, 240, 138, 0.16);
+            border-color: rgba(67, 240, 138, 0.35);
+        }
+
+        .switch.on .knob {
+            left: 21px;
+        }
+
+        .mini {
+            width: 170px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        @media (max-width: 560px) {
+            .mini {
+                width: 100%;
+            }
+        }
+
+        .result {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100%;
+        }
+
+        .big {
+            padding: 22px 18px 10px 18px;
+            text-align: center;
+        }
+
+        .hours {
+            font-size: 72px;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin: 0;
+            color: var(--ok);
+            transition: color 140ms ease;
+        }
+
+        .subline {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .subpill {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.14);
+            max-width: 100%;
+        }
+
+        .splitRow {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .status {
+            margin: 12px 18px 18px 18px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(0, 0, 0, 0.18);
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.35;
+            min-height: 48px;
+        }
+
+        .btnRow {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.10);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <h1 class="page-title">Work time calculator</h1>
+
+        <div class="wrap">
+            <div class="card">
+                <div class="head">
+                    <h1 class="title">Time Registration</h1>
+                </div>
+
+                <div class="content">
+                    <div class="grid">
+                        <div>
+                            <label for="startTime">Start time</label>
+                            <input id="startTime" type="time" value="08:00" />
+                        </div>
+                        <div>
+                            <label for="endTime">End time</label>
+                            <input id="endTime" type="time" value="16:00" />
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top:14px;">
+                        <div class="toggle">
+                            <div id="lunchSwitch" class="switch on" role="switch" aria-checked="true" tabindex="0">
+                                <div class="knob"></div>
+                            </div>
+                            <div>
+                                <div style="font-weight:650; font-size:14px;">Subtract lunch</div>
+                                <div style="color: rgba(255,255,255,0.65); font-size:12px; margin-top:2px;">Default: 30
+                                    min</div>
+                            </div>
+                        </div>
+
+                        <div class="mini">
+                            <label for="lunchMinutes">Lunch (min)</label>
+                            <input id="lunchMinutes" type="number" inputmode="numeric" min="0" step="5" value="30" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div>
+                            <div style="font-weight:650; font-size:14px;">Daily target</div>
+                            <div style="color: rgba(255,255,255,0.65); font-size:12px; margin-top:2px;">Default: 7.4
+                                hours</div>
+                        </div>
+
+                        <div class="mini">
+                            <label for="targetHours">Target (hours)</label>
+                            <input id="targetHours" type="number" inputmode="decimal" min="0" step="0.1" value="7.4" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="toggle">
+                            <div id="billableSwitch" class="switch" role="switch" aria-checked="false" tabindex="0">
+                                <div class="knob"></div>
+                            </div>
+                            <div>
+                                <div style="font-weight:650; font-size:14px;">Track billable time</div>
+                                <div style="color: rgba(255,255,255,0.65); font-size:12px; margin-top:2px;">Optional
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mini" style="align-items:flex-end;">
+                            <div style="color: rgba(255,255,255,0.65); font-size:12px; text-align:right;">
+                                Shows extra fields
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="billableFields" class="row hidden">
+                        <div style="flex:1;">
+                            <div style="font-weight:650; font-size:14px;">Billable duration</div>
+                            <div style="color: rgba(255,255,255,0.65); font-size:12px; margin-top:2px;">
+                                Enter as hours + minutes
+                            </div>
+                        </div>
+
+                        <div class="mini" style="width:130px;">
+                            <label for="billableHours">Hours</label>
+                            <input id="billableHours" type="number" inputmode="numeric" min="0" step="1" value="0" />
+                        </div>
+
+                        <div class="mini" style="width:130px;">
+                            <label for="billableMinutes">Minutes</label>
+                            <input id="billableMinutes" type="number" inputmode="numeric" min="0" step="1" value="0" />
+                        </div>
+                    </div>
+
+                    <div class="btnRow">
+                        <button id="copyBtn" type="button">Copy internal</button>
+                        <button id="copyBillableBtn" type="button" class="hidden">Copy billable</button>
+                        <button id="resetBtn" type="button">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card result">
+                <div class="head">
+                    <h2 class="title">Result</h2>
+                </div>
+
+                <div class="big">
+                    <p id="hoursOut" class="hours">–</p>
+
+                    <div class="subline">
+                        <div id="details" class="subpill">Enter times to see the result.</div>
+
+                        <div id="splitRow" class="splitRow hidden">
+                            <div id="internalLine" class="subpill">Internal: –</div>
+                            <div id="billableLine" class="subpill">Billable: –</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="status" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const elStart = document.getElementById('startTime');
+        const elEnd = document.getElementById('endTime');
+
+        const elLunchSwitch = document.getElementById('lunchSwitch');
+        const elLunchMinutes = document.getElementById('lunchMinutes');
+
+        const elTarget = document.getElementById('targetHours');
+
+        const elBillableSwitch = document.getElementById('billableSwitch');
+        const elBillableFields = document.getElementById('billableFields');
+        const elBillableHours = document.getElementById('billableHours');
+        const elBillableMinutes = document.getElementById('billableMinutes');
+
+        const elHoursOut = document.getElementById('hoursOut');
+        const elDetails = document.getElementById('details');
+
+        const elSplitRow = document.getElementById('splitRow');
+        const elInternalLine = document.getElementById('internalLine');
+        const elBillableLine = document.getElementById('billableLine');
+
+        const elStatus = document.getElementById('status');
+
+        const btnCopy = document.getElementById('copyBtn');
+        const btnCopyBillable = document.getElementById('copyBillableBtn');
+        const btnReset = document.getElementById('resetBtn');
+
+        function timeToMinutes(t) {
+            if (!t || !t.includes(':')) return null;
+            const [h, m] = t.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            return h * 60 + m;
+        }
+
+        function num(n, fallback = 0) {
+            const x = Number(n);
+            return Number.isFinite(x) ? x : fallback;
+        }
+
+        function clampInt(n, min = 0, max = 9999) {
+            const x = Math.floor(num(n, 0));
+            return Math.min(max, Math.max(min, x));
+        }
+
+        function isLunchOn() { return elLunchSwitch.classList.contains('on'); }
+        function isBillableOn() { return elBillableSwitch.classList.contains('on'); }
+
+        function setSwitch(el, on) {
+            el.classList.toggle('on', on);
+            el.setAttribute('aria-checked', on ? 'true' : 'false');
+        }
+
+        function setLunchOn(on) {
+            setSwitch(elLunchSwitch, on);
+            elLunchMinutes.disabled = !on;
+            elLunchMinutes.style.opacity = on ? '1' : '0.55';
+            computeAndRender();
+        }
+
+        function setBillableOn(on) {
+            setSwitch(elBillableSwitch, on);
+            elBillableFields.classList.toggle('hidden', !on);
+            btnCopyBillable.classList.toggle('hidden', !on);
+            elSplitRow.classList.toggle('hidden', !on);
+            computeAndRender();
+        }
+
+        function formatHours(hours) {
+            const rounded = Math.round(hours * 10) / 10;
+            return rounded.toFixed(1);
+        }
+
+        function computeTotal() {
+            const s = timeToMinutes(elStart.value);
+            const e = timeToMinutes(elEnd.value);
+            if (s === null || e === null) return { ok: false };
+
+            let diff = e - s;
+            if (diff < 0) diff += 24 * 60;
+
+            const lunchMin = isLunchOn() ? Math.max(0, num(elLunchMinutes.value, 30)) : 0;
+            diff = Math.max(0, diff - lunchMin);
+
+            const hours = diff / 60;
+            const target = Math.max(0, num(elTarget.value, 7.4));
+
+            return { ok: true, hours, diffMin: diff, lunchMin, target };
+        }
+
+        function computeBillable() {
+            const h = clampInt(elBillableHours.value, 0, 999);
+            const m = clampInt(elBillableMinutes.value, 0, 999);
+            const totalMin = (h * 60) + m;
+            return { hours: totalMin / 60, totalMin };
+        }
+
+        function computeAndRender() {
+            const total = computeTotal();
+
+            if (!total.ok) {
+                elHoursOut.textContent = '–';
+                elHoursOut.style.color = 'rgba(255,255,255,0.85)';
+                elDetails.textContent = 'Enter times to see the result.';
+                elStatus.textContent = '';
+                if (isBillableOn()) {
+                    elInternalLine.textContent = 'Internal: –';
+                    elBillableLine.textContent = 'Billable: –';
+                }
+                return;
+            }
+
+            elHoursOut.textContent = formatHours(total.hours);
+
+            const startTxt = elStart.value || '–';
+            const endTxt = elEnd.value || '–';
+
+            const workedMin = total.diffMin;
+            const hh = Math.floor(workedMin / 60);
+            const mm = workedMin % 60;
+
+            elDetails.textContent =
+                `${startTxt} → ${endTxt} · Net: ${hh}h ${String(mm).padStart(2, '0')}m` +
+                (total.lunchMin ? ` · Lunch: ${total.lunchMin}m` : '');
+
+            const shown = (Math.round(total.hours * 10) / 10);
+            const targetShown = (Math.round(total.target * 10) / 10);
+            const tol = 0.0001;
+
+            if (shown + tol < targetShown) {
+                elHoursOut.style.color = 'var(--bad)';
+                elStatus.innerHTML = `You have <strong>not</strong> reached the minimum <strong>${formatHours(total.target)}</strong> hours.`;
+            } else if (Math.abs(shown - targetShown) <= tol) {
+                elHoursOut.style.color = 'var(--ok)';
+                elStatus.innerHTML = `You hit the target exactly: <strong>${formatHours(total.target)}</strong> hours.`;
+            } else {
+                elHoursOut.style.color = 'var(--good)';
+                elStatus.innerHTML = `Nice. You are above the target of <strong>${formatHours(total.target)}</strong> hours.`;
+            }
+
+            if (isBillableOn()) {
+                const bill = computeBillable();
+                const internalNonBillable = Math.max(0, total.hours - bill.hours);
+                elInternalLine.textContent = `Internal: ${formatHours(internalNonBillable)}`;
+                elBillableLine.textContent = `Billable: ${formatHours(bill.hours)}`;
+            }
+        }
+
+        function toggleByClickOrKey(el, toggleFn) {
+            el.addEventListener('click', toggleFn);
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleFn();
+                }
+            });
+        }
+
+        toggleByClickOrKey(elLunchSwitch, () => setLunchOn(!isLunchOn()));
+        toggleByClickOrKey(elBillableSwitch, () => setBillableOn(!isBillableOn()));
+
+        [elStart, elEnd, elLunchMinutes, elTarget, elBillableHours, elBillableMinutes].forEach(el => {
+            el.addEventListener('input', computeAndRender);
+            el.addEventListener('change', computeAndRender);
+        });
+
+        async function copyText(txt, btn, normalLabel) {
+            try {
+                await navigator.clipboard.writeText(txt);
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = normalLabel, 900);
+            } catch {
+                const tmp = document.createElement('input');
+                tmp.value = txt;
+                document.body.appendChild(tmp);
+                tmp.select();
+                document.execCommand('copy');
+                document.body.removeChild(tmp);
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = normalLabel, 900);
+            }
+        }
+
+        btnCopy.addEventListener('click', () => {
+            const total = computeTotal();
+            if (!total.ok) return;
+
+            if (isBillableOn()) {
+                const bill = computeBillable();
+                const internalNonBillable = Math.max(0, total.hours - bill.hours);
+                copyText(formatHours(internalNonBillable), btnCopy, 'Copy internal');
+            } else {
+                copyText(formatHours(total.hours), btnCopy, 'Copy internal');
+            }
+        });
+
+        btnCopyBillable.addEventListener('click', () => {
+            const bill = computeBillable();
+            copyText(formatHours(bill.hours), btnCopyBillable, 'Copy billable');
+        });
+
+        btnReset.addEventListener('click', () => {
+            elStart.value = '08:00';
+            elEnd.value = '16:00';
+            elTarget.value = '7.4';
+
+            elLunchMinutes.value = '30';
+            setLunchOn(true);
+
+            elBillableHours.value = '0';
+            elBillableMinutes.value = '0';
+            setBillableOn(false);
+
+            computeAndRender();
+        });
+
+        function setEndTimeToNowOnce() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            elEnd.value = `${hh}:${mm}`;
+        }
+
+        // Init
+        setEndTimeToNowOnce();
+        setLunchOn(true);
+        setBillableOn(false);
+        computeAndRender();
+    </script>
+</body>
+
+</html>
